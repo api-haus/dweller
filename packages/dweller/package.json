@@ -1,0 +1,25 @@
+{
+  "name": "dweller",
+  "version": "0.1.0",
+  "description": "Distributed Scraper",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/yurihq/dweller.git"
+  },
+  "author": "Yuri Chirkov <mail@api.haus>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yurihq/dweller/issues"
+  },
+  "homepage": "https://github.com/yurihq/dweller#readme",
+  "dependencies": {
+    "got": "^11.8.2"
+  },
+  "devDependencies": {
+    "ava": "^3.15.0"
+  }
+}
