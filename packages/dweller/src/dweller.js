@@ -1,3 +1,4 @@
+const debug = require('debug')('dweller:lib');
 const EventEmitter = require('events');
 
 const EventHub = require('./event-hub');
@@ -47,6 +48,16 @@ class Dweller extends EventEmitter {
   async connect() {
     if (this.#hub.connect)
       return this.#hub.connect();
+  }
+
+  /**
+   * Disconnect dweller from the network
+   *
+   * @returns {Promise<*>}
+   */
+  async disconnect() {
+    if (this.#hub.disconnect)
+      return this.#hub.disconnect();
   }
 
   /**
@@ -100,8 +111,12 @@ class Dweller extends EventEmitter {
     if (!scenario)
       throw new Error(`scenario for ${url} is undefined`);
 
+    debug('fetch', url);
+
     const response = await this.#transport.fetch(url);
     const parsed = await scenario(url, response);
+
+    debug('publish', url);
 
     return this.#hub.publish(new Document(url, parsed, response));
   }
@@ -111,6 +126,8 @@ class Dweller extends EventEmitter {
 
     if (!expander)
       return;
+
+    debug('expand', document.url);
 
     const resources = await expander(document);
 

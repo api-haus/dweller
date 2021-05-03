@@ -2,9 +2,11 @@
   "name": "dweller-cli",
   "version": "0.0.0",
   "description": "Distributed Scraper",
-  "main": "src/index.js",
+  "main": "src/cli.js",
   "scripts": {
-    "test": "ava"
+    "test": "ava",
+    "visit": "node src/cli visit",
+    "collect": "node src/cli collect"
   },
   "repository": {
     "type": "git",
@@ -19,11 +21,13 @@
   "dependencies": {
     "@sentry/node": "^6.3.5",
     "@sentry/tracing": "^6.3.5",
-    "dweller": "^0.0.0",
+    "dweller": "^0.1.2",
+    "dweller-kafka": "^0.1.7",
     "kafkajs": "^1.15.0",
     "sentry": "^0.1.2"
   },
   "devDependencies": {
-    "ava": "^3.15.0"
+    "ava": "^3.15.0",
+    "nodemon": "^2.0.7"
   }
 }

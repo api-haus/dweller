@@ -1,6 +1,6 @@
 {
   "name": "dweller-kafka",
-  "version": "0.0.0",
+  "version": "0.1.7",
   "description": "Distributed Scraper",
   "main": "src/index.js",
   "scripts": {
@@ -19,7 +19,7 @@
   "dependencies": {
     "@sentry/node": "^6.3.5",
     "@sentry/tracing": "^6.3.5",
-    "dweller": "^0.1.0",
+    "dweller": "^0.1.2",
     "kafkajs": "^1.15.0"
   },
   "devDependencies": {

@@ -1,2 +1,2 @@
 exports.collect = require('./collect');
-exports.expand = require('./expand');
+exports.visit = require('./visit');

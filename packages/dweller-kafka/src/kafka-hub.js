@@ -1,3 +1,4 @@
+const debug = require('debug')('dweller:kafka');
 const { cpus } = require('os');
 const { Document } = require('dweller');
 const { EventEmitter } = require('events');
@@ -18,10 +19,10 @@ class KafkaHub extends EventEmitter {
   #producer;
   #consumers;
 
-  constructor({ groupId, kafka, inputs, sinks }) {
+  constructor({ groupId = 'dweller-kafka', kafka, inputs = [], sinks = [] }) {
     super();
 
-    this.#producer = kafka.producer();
+    this.#consumers = [];
     this.#groupId = groupId;
     this.#inputs = inputs;
     this.#sinks = sinks;
@@ -29,42 +30,41 @@ class KafkaHub extends EventEmitter {
   }
 
   async connect() {
-    await this.#producer.connect();
-    const { consumers, inputs, sinks } = this;
+    const eventConsumers = await Promise.all([
+      this.#consumeEvents(this.#inputs, EVENTS.NEW_REQUEST, this.#readURL),
+      this.#consumeEvents(this.#sinks, EVENTS.NEW_DOCUMENT, this.#readDocument),
+    ]);
 
-    consumers.push(
-      this.#consumeEvents(inputs, EVENTS.NEW_REQUEST, this.#parseURL),
-      this.#consumeEvents(sinks, EVENTS.NEW_DOCUMENT, this.#parseDocument),
-    );
+    this.#consumers.push(...eventConsumers);
   }
 
   async disconnect() {
     for (const consumer of this.#consumers)
       await consumer.disconnect();
 
-    await this.#producer.disconnect();
+    if (this.#producer)
+      await this.#producer.disconnect();
   }
 
   async publish(document) {
-    const { sinks, producer } = this;
+    const message = JSON.stringify(document.toJSON());
+    const topicMessages = produceMany(this.#sinks, message);
 
-    const topicMessages = produceMany(sinks, JSON.stringify(document.toJSON()));
-
+    const producer = await this.#getProducer();
     await producer.sendBatch({ topicMessages });
   }
 
   async collect(url) {
-    const { inputs, producer } = this;
+    const message = url.toString();
+    const topicMessages = produceMany(this.#inputs, message);
 
-    const topicMessages = produceMany(inputs, url.toString());
-
+    const producer = await this.#getProducer();
     await producer.sendBatch({ topicMessages });
   }
 
   async #consumeEvents(topics, eventName, handler) {
-    const { groupId, kafka } = this;
-
-    const consumer = kafka.consumer({ groupId });
+    const groupId = `${this.#groupId}-${eventName}`;
+    const consumer = this.#kafka.consumer({ groupId });
 
     await consumer.connect();
 
@@ -74,7 +74,9 @@ class KafkaHub extends EventEmitter {
     consumer.run({
       partitionsConsumedConcurrently: cpus().length,
       eachMessage: async ({ message }) => {
-        const intermediate = handler(message.value);
+        debug('Message on %s: %s', topics, message.value.toString());
+
+        const intermediate = handler(message);
 
         this.emit(eventName, intermediate);
       },
@@ -84,12 +86,24 @@ class KafkaHub extends EventEmitter {
     return consumer;
   }
 
-  #parseURL(message) {
+  #readURL(message) {
     return new URL(message.value.toString());
   }
 
-  #parseDocument(message) {
+  #readDocument(message) {
     return Document.fromJSON(message.value);
+  }
+
+  async #getProducer() {
+    if (this.#producer)
+      return this.#producer;
+
+    const producer = this.#kafka.producer();
+
+    await producer.connect();
+    this.#producer = producer;
+
+    return producer;
   }
 }
 
